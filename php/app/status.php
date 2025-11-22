@@ -1,15 +1,15 @@
 <?php
   declare(strict_types=1);
   define('disable_sanitize_output', 'true');
-  require __DIR__ . '/config.php';
+  require __DIR__ . '/languages.php';
   $job = isset($_GET['job']) ? (string)$_GET['job'] : '';
-  if ($job === '') { http_response_code(400); echo "job is required"; exit; }
+  if ($job === '') { http_response_code(400); echo __('err_job_required'); exit; }
 ?>
 <!doctype html>
-<html lang="ja">
+<html lang="<?php echo htmlspecialchars($lang); ?>">
 <head>
   <meta charset="utf-8">
-  <title>復元の進捗状況 - MP4Recover - ActiveTK.jp</title>
+  <title><?php echo __('title_status'); ?></title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <meta name="robots" content="noindex, nofollow">
@@ -33,27 +33,27 @@
   <div class="relative max-w-4xl mx-auto py-10 md:py-16 px-4">
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-2xl md:text-3xl font-semibold tracking-tight leading-snug bg-clip-text text-transparent bg-gradient-to-r from-slate-800 via-blue-700 to-emerald-600 dark:from-white dark:via-blue-300 dark:to-emerald-300 drop-shadow-sm">
-        復元の進捗状況
+        <?php echo __('status_title'); ?>
       </h1>
       <a href="index.php"
          class="text-sm font-medium text-blue-700 dark:text-blue-300 underline decoration-dotted underline-offset-4 hover:decoration-solid focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded px-2 py-1">
-        別のファイルを処理
+        <?php echo __('btn_another'); ?>
       </a>
     </div>
 
     <div id="card" class="glass shadow-2xl shadow-blue-500/10 ring-1 ring-black/5 dark:ring-white/10 rounded-2xl p-6 md:p-8 transition-transform duration-300 hover:translate-y-[-2px]">
       <div class="mb-3 text-xs text-slate-600 dark:text-slate-300/80">
-        内部ID: <code class="inline"><?php echo htmlspecialchars($job, ENT_QUOTES); ?></code>
+        <?php echo __('internal_id'); ?> <code class="inline"><?php echo htmlspecialchars($job, ENT_QUOTES); ?></code>
       </div>
 
-      <div id="summary" class="mb-5 text-sm text-slate-800 dark:text-slate-200/90">読み込み中...</div>
+      <div id="summary" class="mb-5 text-sm text-slate-800 dark:text-slate-200/90"><?php echo __('status_loading'); ?></div>
 
       <div class="flex flex-wrap gap-3 mb-5">
         <button id="expandAll"
                 class="relative inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold
                        bg-white/80 dark:bg-white/5 border border-slate-200/80 dark:border-white/10
                        hover:bg-white/95 dark:hover:bg-white/10 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-          全て展開
+          <?php echo __('btn_expand'); ?>
           <span aria-hidden="true" class="absolute inset-0 rounded-lg ring-1 ring-black/5 dark:ring-white/10 pointer-events-none"></span>
         </button>
 
@@ -61,7 +61,7 @@
                 class="relative inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold
                        bg-white/80 dark:bg-white/5 border border-slate-200/80 dark:border-white/10
                        hover:bg-white/95 dark:hover:bg-white/10 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-          全て折りたたむ
+          <?php echo __('btn_collapse'); ?>
           <span aria-hidden="true" class="absolute inset-0 rounded-lg ring-1 ring-black/5 dark:ring-white/10 pointer-events-none"></span>
         </button>
       </div>
@@ -70,8 +70,8 @@
 
       <div id="result_success" class="mt-6 hidden">
         <div class="p-4 md:p-5 bg-green-50/90 dark:bg-emerald-500/10 border border-green-200 dark:border-emerald-400/30 rounded-xl">
-          <p class="text-green-800 dark:text-emerald-300 font-medium">復元が完了しました。</p>
-          <p class="text-sm text-green-700 dark:text-emerald-200/90 mt-2">大部分の復元に成功しました。ダウンロードしてご確認ください。</p>
+          <p class="text-green-800 dark:text-emerald-300 font-medium"><?php echo __('status_success'); ?></p>
+          <p class="text-sm text-green-700 dark:text-emerald-200/90 mt-2"><?php echo __('desc_success'); ?></p>
           <div class="mt-3">
             <a id="download_success" href="#"
                class="relative inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold text-white
@@ -79,7 +79,7 @@
                       hover:from-green-500 hover:via-emerald-500 hover:to-teal-500
                       focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-500 dark:focus-visible:ring-offset-0
                       shadow-lg animate-pulseGlow">
-              ダウンロード
+              <?php echo __('btn_download'); ?>
               <span aria-hidden="true" class="pointer-events-none absolute inset-0 rounded-lg ring-1 ring-white/20"></span>
             </a>
           </div>
@@ -88,8 +88,8 @@
 
       <div id="result_partial" class="mt-6 hidden">
         <div class="p-4 md:p-5 bg-yellow-50/90 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-400/30 rounded-xl">
-          <p class="text-yellow-900 dark:text-yellow-200 font-medium">部分的に復元成功（0.1秒以上または音声トラックのみ）。</p>
-          <p class="text-sm text-yellow-800 dark:text-yellow-100/90 mt-2">同じ環境で撮影した正常な動画を一緒にアップロードすると成功率が上がります。</p>
+          <p class="text-yellow-900 dark:text-yellow-200 font-medium"><?php echo __('status_partial'); ?></p>
+          <p class="text-sm text-yellow-800 dark:text-yellow-100/90 mt-2"><?php echo __('desc_partial'); ?></p>
           <div class="mt-3">
             <a id="download_partial" href="#"
                class="relative inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold text-white
@@ -97,7 +97,7 @@
                       hover:from-yellow-500 hover:via-amber-500 hover:to-orange-500
                       focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-amber-500 dark:focus-visible:ring-offset-0
                       shadow-lg">
-              部分結果をダウンロード
+              <?php echo __('btn_download_partial'); ?>
               <span aria-hidden="true" class="pointer-events-none absolute inset-0 rounded-lg ring-1 ring-white/20"></span>
             </a>
           </div>
@@ -106,8 +106,8 @@
 
       <div id="failed" class="mt-6 hidden">
         <div class="p-4 md:p-5 bg-red-50/90 dark:bg-red-500/10 border border-red-200 dark:border-red-400/30 rounded-xl">
-          <p class="text-red-800 dark:text-red-300 font-medium" id="failTitle">復元に失敗しました。</p>
-          <p class="text-sm text-red-700 dark:text-red-200/90 mt-2" id="failNote">全ての修復方法に失敗しました。もし同じ環境で撮影した別の動画があれば、選択すると復元できる可能性が高くなります。</p>
+          <p class="text-red-800 dark:text-red-300 font-medium" id="failTitle"><?php echo __('status_failed'); ?></p>
+          <p class="text-sm text-red-700 dark:text-red-200/90 mt-2" id="failNote"><?php echo __('desc_failed'); ?></p>
         </div>
       </div>
     </div>
@@ -115,11 +115,17 @@
 
 <script>
 window.currentFN="";const job = <?php echo json_encode($job); ?>;
-let timer=null;function stopPoll(){timer&&(clearInterval(timer),timer=null)}function stripAnsi(e){return e?(e=e.replace(/\x1B\[[0-?]*[ -/]*[@-~]/g,"")).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,""):""}function esc(e){return String(e??"").replace(/[&<>"']/g,e=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[e])}function badge(e){switch(e){case"queued":return"bg-gray-600 dark:bg-gray-500";case"running":return"bg-blue-600";case"success":return"bg-green-600";case"part_success":return"bg-yellow-600";case"failed":return"bg-red-600";default:return"bg-gray-600"}}async function fetchStatus(){try{var e=await(await fetch("status-proxy.php?"+new URLSearchParams({job:job}))).json();e._error?(document.getElementById("summary").textContent="エラー: "+e._error,stopPoll()):render(e)}catch(e){document.getElementById("summary").textContent="取得エラー: "+e.message,stopPoll()}}function render(e){var t=document.getElementById("summary");const n=document.getElementById("steps");var s=document.getElementById("result_success"),a=document.getElementById("result_partial"),d=document.getElementById("failed");window.currentFN=e.orig_filename;t.innerHTML=`
+const LANG = {
+    state: "<?php echo __('state_label'); ?>",
+    orig: "<?php echo __('orig_file_label'); ?>",
+    start: "<?php echo __('step_start'); ?>",
+    end: "<?php echo __('step_end'); ?>"
+};
+let timer=null;function stopPoll(){timer&&(clearInterval(timer),timer=null)}function stripAnsi(e){return e?(e=e.replace(/\x1B\[[0-?]*[ -/]*[@-~]/g,"")).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,""):""}function esc(e){return String(e??"").replace(/[&<>"']/g,e=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[e])}function badge(e){switch(e){case"queued":return"bg-gray-600 dark:bg-gray-500";case"running":return"bg-blue-600";case"success":return"bg-green-600";case"part_success":return"bg-yellow-600";case"failed":return"bg-red-600";default:return"bg-gray-600"}}async function fetchStatus(){try{var e=await(await fetch("status-proxy.php?"+new URLSearchParams({job:job}))).json();e._error?(document.getElementById("summary").textContent="Error: "+e._error,stopPoll()):render(e)}catch(e){document.getElementById("summary").textContent="Fetch Error: "+e.message,stopPoll()}}function render(e){var t=document.getElementById("summary");const n=document.getElementById("steps");var s=document.getElementById("result_success"),a=document.getElementById("result_partial"),d=document.getElementById("failed");window.currentFN=e.orig_filename;t.innerHTML=`
     <div class="flex items-center gap-2 flex-wrap">
-      <span class="text-slate-600 dark:text-slate-300/90">状態:</span>
+      <span class="text-slate-600 dark:text-slate-300/90">${LANG.state}</span>
       <span class="px-2 py-0.5 rounded text-white ${badge(e.status)}">${esc(e.status)}</span>
-      ${e.orig_filename?`<span class="text-slate-500 dark:text-slate-400 ml-2">元ファイル:</span><code class="inline">${esc(e.orig_filename)}</code>`:""}
+      ${e.orig_filename?`<span class="text-slate-500 dark:text-slate-400 ml-2">${LANG.orig}</span><code class="inline">${esc(e.orig_filename)}</code>`:""}
     </div>`,n.innerHTML="",(e.steps||[]).forEach(e=>{var t=stripAnsi(e.message||""),s=document.createElement("details"),a=(s.className="rounded-xl border border-slate-200/80 dark:border-white/10 overflow-hidden bg-white/70 dark:bg-white/5 shadow-sm",`
       <summary class="select-none px-3 md:px-4 py-2.5 flex items-center justify-between hover:bg-slate-50/80 dark:hover:bg-white/10 transition-colors">
         <div class="flex items-center gap-2">
@@ -129,7 +135,7 @@ let timer=null;function stopPoll(){timer&&(clearInterval(timer),timer=null)}func
         <span class="px-2 py-0.5 rounded text-white text-xs ${badge(e.status)}">${esc(e.status)}</span>
       </summary>`),e=`
       <div class="px-3 md:px-4 pb-3 md:pb-4">
-        <div class="text-xs text-slate-600 dark:text-slate-300/80">${e.started_at?"開始: "+esc(e.started_at):""} ${e.finished_at?" / 終了: "+esc(e.finished_at):""}</div>
+        <div class="text-xs text-slate-600 dark:text-slate-300/80">${e.started_at?LANG.start+" "+esc(e.started_at):""} ${e.finished_at?LANG.end+" "+esc(e.finished_at):""}</div>
         ${t?`<pre class="mt-2 text-sm text-slate-800 dark:text-slate-100 bg-slate-50/80 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 rounded-lg p-3">${esc(t)}</pre>`:""}
       </div>`;s.innerHTML=a+e,n.appendChild(s)}),s.classList.add("hidden"),a.classList.add("hidden"),d.classList.add("hidden"),"success"===e.status?(stopPoll(),s.classList.remove("hidden"),document.getElementById("download_success").href="download.php?job="+encodeURIComponent(e.job_id)):"part_success"===e.status?(stopPoll(),a.classList.remove("hidden"),document.getElementById("download_partial").href="download.php?job="+encodeURIComponent(e.job_id)+"&filename="+encodeURIComponent(window.currentFN)):"failed"===e.status&&(stopPoll(),d.classList.remove("hidden"),document.getElementById("failNote").textContent=e.fail_reason||document.getElementById("failNote").textContent)}document.getElementById("expandAll").addEventListener("click",()=>{document.querySelectorAll("#steps details").forEach(e=>e.open=!0)}),document.getElementById("collapseAll").addEventListener("click",()=>{document.querySelectorAll("#steps details").forEach(e=>e.open=!1)}),fetchStatus(),timer=setInterval(fetchStatus,2e3);
 </script>

@@ -1,52 +1,70 @@
 # MP4Recover
 
-A simple web tool to recover broken mp4 files, using fix_avcC, ffmpeg, MP4Box, remoover, untrunc, reencode, etc.
+**Easily recover broken MP4 files using advanced technical means.**
 
-https://mp4-recover.activetk.jp/
+MP4Recover is a powerful web-based tool that leverages multiple recovery strategies (fix_avcC, ffmpeg, MP4Box, remoover, untrunc, reencode, etc.) to restore corrupted video files.
 
-# Requirements
+## 🚀 Getting Started
 
-As this tool works on docker, all you need is just docker engine and docker compose.
+This tool runs entirely on **Docker**, making it easy to set up on any operating system.
 
-Ask ChatGPT or Gemini how to install them:
+### Prerequisites
 
-```Bash
-Yo GPT plz tell me how to install docker engine and docker compose on my computer
+You need to have **Docker** installed on your machine.
+
+- **Windows / macOS**: Install [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+- **Linux**: Install Docker Engine and Docker Compose.
+
+### Installation & Usage
+
+#### 1. Clone the Repository
+Open your terminal (Command Prompt, PowerShell, or Terminal) and run:
+```bash
+git clone https://github.com/ActiveTK/MP4Recover.git
+cd MP4Recover
 ```
 
-# Setup
+#### 2. Build and Start
+Run the build script for your operating system.
 
-## Step1. Clone the repository
-
-```Bash
-git clone https://github.com/ActiveTK/MP4Recover/
-cd MP4Recover/
+**🪟 Windows**
+Double-click `build.bat` or run it from PowerShell:
+```powershell
+.\build.bat
 ```
 
-## Step2. Run `build.bat` or `build.sh`
-
-If you are using Windows, then use `build.bat` to build the docker image:
-
-```Bash
-./build.bat
-```
-
-For Linux or macOS users, run `build.sh`:
-
-```Bash
+**🐧 Linux / 🍎 macOS**
+Run the shell script:
+```bash
 chmod +x build.sh
 ./build.sh
 ```
 
-## Step3. Open browser and go to localhost:8080
+#### 3. Access the Tool
+Once the script finishes, open your browser and go to:
+👉 **http://localhost:8080**
 
-Now you can use your own MP4Recover on https://localhost:8080/ . 
+- **Web Interface**: `http://localhost:8080`
+- **Orchestrator API**: `http://localhost:8000`
 
-The port number depends on your `docker-compose.yml`.
+---
 
-# License
+## 🌍 Multi-language Support
+The interface supports **English**, **Italian**, and **Japanese**. You can switch languages using the links in the top-right corner of the page.
 
-This program is released under the MIT License.
+## 🛠 Troubleshooting
 
-© 2025 ActiveTK.  
-🔗 https://github.com/ActiveTK/MP4Recover/blob/main/LICENSE
+**"Docker is not running"**
+- Make sure Docker Desktop is started.
+- On Linux, ensure the docker daemon is active (`sudo systemctl start docker`).
+
+**"Ports are already in use"**
+- The tool uses ports `8080` and `8000`. If these are taken, edit `docker-compose.yml` and change the ports mapping (e.g., `"8081:80"`).
+
+---
+
+## 📜 License
+This project is released under the **MIT License**.
+See [LICENSE](LICENSE) for details.
+
+© 2025 MCarraroDev.

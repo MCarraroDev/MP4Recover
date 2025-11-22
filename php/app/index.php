@@ -1,12 +1,13 @@
 <?php
   declare(strict_types=1);
   require __DIR__ . '/config.php';
+  require __DIR__ . '/languages.php';
 ?>
 <!doctype html>
-<html lang="ja">
+<html lang="<?php echo htmlspecialchars($lang); ?>">
 <head>
   <meta charset="utf-8">
-  <title>【完全無料】壊れたMP4ファイルを簡単に復元！ - MP4Recover - ActiveTK.jp</title>
+  <title><?php echo __('title_index'); ?></title>
   <meta name="robots" content="all">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
@@ -30,15 +31,23 @@
     <div class="glass rounded-2xl p-6 md:p-10 shadow-2xl shadow-blue-500/10 ring-1 ring-black/5 dark:ring-white/10 transition-transform duration-300 hover:translate-y-[-2px]">
 
       <div class="mb-6 md:mb-8">
-        <h1 class="text-2xl md:text-3xl font-semibold tracking-tight leading-snug bg-clip-text text-transparent bg-gradient-to-r from-slate-800 via-blue-700 to-emerald-600 dark:from-white dark:via-blue-300 dark:to-emerald-300 drop-shadow-sm mb-3">
-          壊れたMP4ファイルを簡単に復元できるツール「MP4Recover」 - ActiveTK.jp
-        </h1>
+        <div class="flex justify-between items-start">
+            <h1 class="text-2xl md:text-3xl font-semibold tracking-tight leading-snug bg-clip-text text-transparent bg-gradient-to-r from-slate-800 via-blue-700 to-emerald-600 dark:from-white dark:via-blue-300 dark:to-emerald-300 drop-shadow-sm mb-3">
+            <?php echo __('hero_title'); ?>
+            </h1>
+            <div class="flex gap-2 text-sm font-medium">
+                <a href="?lang=en" class="<?php echo $lang === 'en' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'; ?>">EN</a>
+                <span class="text-slate-300 dark:text-slate-600">|</span>
+                <a href="?lang=it" class="<?php echo $lang === 'it' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'; ?>">IT</a>
+                <span class="text-slate-300 dark:text-slate-600">|</span>
+                <a href="?lang=ja" class="<?php echo $lang === 'ja' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'; ?>">JP</a>
+            </div>
+        </div>
         <div class="h-px w-full bg-gradient-to-r from-transparent via-slate-300/70 to-transparent dark:via-white/20"></div>
       </div>
 
       <p class="text-[15px] leading-7 text-slate-700 dark:text-slate-200/90 mb-6">
-        壊れたMP4ファイルをありとあらゆる高度な技術的手段(fix_avcC, ffmpeg, MP4Box, remoover, untrunc, reencode, etc.)で復元します。
-        おそらくこのツールで復元できない動画は、どうあがいても復元できません。
+        <?php echo __('hero_desc'); ?>
       </p>
 
       <form id="form" class="rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-white/5 p-5 md:p-7 shadow-xl shadow-slate-900/5 backdrop-blur"
@@ -48,7 +57,8 @@
             <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5 text-blue-600 dark:text-blue-400">
               <path fill="currentColor" d="M12 3a5 5 0 0 0-5 5v2H6a4 4 0 0 0 0 8h12a4 4 0 0 0 0-8h-1V8a5 5 0 0 0-5-5Zm-3 7V8a3 3 0 1 1 6 0v2h2a2 2 0 1 1 0 4H7a2 2 0 1 1 0-4h2Z"/>
             </svg>
-            壊れたMP4ファイル
+            </svg>
+            <?php echo __('label_broken'); ?>
           </label>
           <input type="file" name="broken" accept="video/mp4" required class="">
         </div>
@@ -58,10 +68,11 @@
             <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5 text-emerald-600 dark:text-emerald-400">
               <path fill="currentColor" d="M4 5h16a1 1 0 0 1 1 1v10.5a1 1 0 0 1-1.447.894L12 14.118l-7.553 3.276A1 1 0 0 1 3 16.5V6a1 1 0 0 1 1-1Z"/>
             </svg>
-            (任意) 同じ環境で撮影した正常なMP4ファイル
+            </svg>
+            <?php echo __('label_reference'); ?>
           </label>
           <input type="file" name="reference" accept="video/mp4" class="">
-          <p class="text-xs text-slate-600 dark:text-slate-300/80 mt-2">もしあれば、復元できる可能性が(とても)高くなります。</p>
+          <p class="text-xs text-slate-600 dark:text-slate-300/80 mt-2"><?php echo __('desc_reference'); ?></p>
         </div>
 
         <div class="flex flex-wrap gap-3 pt-2">
@@ -75,15 +86,15 @@
             <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5">
               <path fill="currentColor" d="M5 12h6V5l8 7-8 7v-7H5z"/>
             </svg>
-            アップロードして復元開始
+            </svg>
+            <?php echo __('btn_upload'); ?>
             <span aria-hidden="true" class="pointer-events-none absolute inset-0 rounded-lg ring-1 ring-white/20"></span>
           </button>
         </div>
       </form>
 
       <p class="mt-6 text-[13px] leading-6 text-slate-600 dark:text-slate-300/80">
-        * このツールは高校生個人が運営しており、クラウド上のコンテナ環境で大量のリソースを利用しているためかなりの採算度外視サービスとなっております。
-        もし動画が上手く復元できた場合、よろしければ<a href="https://profile.activetk.jp/" class="underline decoration-dotted underline-offset-4 hover:decoration-solid text-blue-700 dark:text-blue-300">寄付</a>をご検討ください。
+        <?php echo __('footer_note'); ?>
       </p>
     </div>
   </div>

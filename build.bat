@@ -1,27 +1,50 @@
 @echo off
-setlocal
+setlocal EnableDelayedExpansion
 
-rem 簡易ビルド用スクリプト
-rem Docker Composeを使用して、mp4-repairとphp-webのコンテナをビルド・起動します。
-rem 元々のコンテナは自動で削除するため、注意してください。
-rem (Windows用)
+echo ==========================================
+echo      MP4Recover Build ^& Start Script
+echo ==========================================
 
-for %%N in (mp4-repair php-web) do (
-  for /F "tokens=*" %%i in ('docker ps -aq -f "name=^/%%N$"') do docker rm -f %%i >nul 2>&1
+REM Check if Docker is running
+docker info >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [ERROR] Docker is not running or not installed.
+    echo Please start Docker Desktop and try again.
+    pause
+    exit /b 1
 )
 
+echo [INFO] Docker is running.
+
+REM Stop and remove existing containers
+echo.
+echo [1/3] Stopping and cleaning up old containers...
 docker compose down -v --remove-orphans
+if %errorlevel% neq 0 (
+    echo [WARNING] Failed to clean up some resources. Continuing...
+)
 
-echo [1/3] Build orchestrator image...
-cd /d "%~dp0.\orchestrator"
-docker build -t mp4-repair-orchestrator .
-
-echo [2/3] Bring down again (double ensure)...
-cd /d "%~dp0..\"
-docker compose down -v --remove-orphans
-
-echo [3/3] Start compose stack...
+REM Build and start containers
+echo.
+echo [2/3] Building and starting containers...
 docker compose up -d --build --force-recreate --remove-orphans
+if %errorlevel% neq 0 (
+    echo [ERROR] Failed to build or start containers.
+    pause
+    exit /b 1
+)
+
+REM Show status
+echo.
+echo [3/3] Checking container status...
+docker compose ps
+echo.
+echo ==========================================
+echo      SUCCESS! System is up and running
+echo ==========================================
+echo Orchestrator: http://localhost:8000
+echo Web Interface: http://localhost:8080
+echo.
 
 endlocal
-@echo on
+pause

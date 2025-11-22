@@ -2,6 +2,7 @@
   declare(strict_types=1);
   define('disable_sanitize_output', 'true');
   require __DIR__ . '/config.php';
+  require __DIR__ . '/languages.php';
 
   ob_start();
   ini_set('display_errors', '0');
@@ -43,11 +44,11 @@
   }
 
   if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    fail('POSTで送信してください。', 405);
+    fail(__('err_post_required'), 405);
   }
 
   if (!isset($_FILES['broken']) || $_FILES['broken']['error'] !== UPLOAD_ERR_OK) {
-    fail('壊れたMP4ファイルのアップロードに失敗しました。');
+    fail(__('err_upload_failed'));
   }
 
   $broken_tmp  = $_FILES['broken']['tmp_name'];
@@ -56,7 +57,7 @@
   $ref_present = isset($_FILES['reference']) && $_FILES['reference']['error'] === UPLOAD_ERR_OK;
 
   $in_dir = '/data/in';
-  if (!is_dir($in_dir)) { if (!@mkdir($in_dir, 0775, true)) fail('サーバ側保存ディレクトリの作成に失敗しました。', 500); }
+  if (!is_dir($in_dir)) { if (!@mkdir($in_dir, 0775, true)) fail(__('err_mkdir_failed'), 500); }
 
   $broken_base = bin2hex(random_bytes(12)).".mp4";
   $broken_dst  = $in_dir . '/' . $broken_base;
@@ -64,7 +65,7 @@
     $perm = @decoct(@fileperms($in_dir) & 0777);
     $uid  = function_exists('posix_getuid') ? @posix_getuid() : -1;
     $gid  = function_exists('posix_getgid') ? @posix_getgid() : -1;
-    fail("アップロードの保存に失敗しました。dir_perm={$perm} uid={$uid} gid={$gid}", 500);
+    fail(__('err_save_failed') . " dir_perm={$perm} uid={$uid} gid={$gid}", 500);
   }
 
   $ref_base = null; $ref_dst = null; $ref_name = null;
@@ -74,7 +75,7 @@
     $ref_base = bin2hex(random_bytes(12)).".mp4";
     $ref_dst  = $in_dir . '/' . $ref_base;
     if (!move_uploaded_file($ref_tmp, $ref_dst)) {
-      fail('アップロードの保存に失敗しました。', 500);
+      fail(__('err_save_failed'), 500);
     }
   }
 
@@ -99,15 +100,15 @@
   curl_close($ch);
 
   if ($resp === false) {
-    fail("復元開始に失敗しました（cURL error: {$cerr}）", 502);
+    fail(__('err_curl_error', $cerr), 502);
   }
   if ($http >= 300) {
-    fail("復元開始に失敗しました（HTTP {$http}: {$resp}）", 502);
+    fail(__('err_http_error', $http, $resp), 502);
   }
 
   $data = json_decode($resp, true);
   if (!$data || !isset($data['job_id'])) {
-    fail("サーバー内部の通信に失敗しました。resp=".substr((string)$resp,0,512), 502);
+    fail(__('err_internal_comm') . " resp=".substr((string)$resp,0,512), 502);
   }
 
   $job = $data['job_id'];
