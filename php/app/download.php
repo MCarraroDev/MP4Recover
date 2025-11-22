@@ -13,7 +13,7 @@
   $size = filesize($path);
 
   $filename = 'recovered_' . $job .' .mp4';
-  # ファイル名が渡されてるときはそれをファイル名にする
+  # If filename is passed, use it as the filename
   if (isset($_GET['filename']) && !empty($_GET['filename'])) {
     $filename = 'recovered_' . str_replace('"', ' ', basename($_GET['filename']));
   }

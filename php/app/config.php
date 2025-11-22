@@ -1,5 +1,5 @@
 <?php
-  // 設定ファイル
+  // Configuration file
 
   declare(strict_types=1);
   define( "LOAD_START_TIME", microtime( true ) );
@@ -16,13 +16,13 @@
   header( "X-Permitted-Cross-Domain-Policies: none" );
   header( "Referrer-Policy: same-origin" );
 
-  // HTMLを圧縮する関数
+  // Function to compress HTML
   function sanitize_output($buffer) {
 
-    // XSS攻撃を防止するランダムな英数列
+    // Random alphanumeric string to prevent XSS attacks
     define( "FLG", substr( base_convert( sha1( md5( uniqid() ) . md5 ( microtime() ) ), 16, 36), 0, 5) );
 
-    // Content-TypeがHTMLでない場合の処理
+    // Processing when Content-Type is not HTML
     foreach(headers_list() as $line)
     {
       list($title, $data) = explode(": ", $line, 2);
@@ -30,7 +30,7 @@
         return $buffer;
     }
 
-    // 中身の改行が意味を持つタグの処理
+    // Processing tags where line breaks inside matter
     $buffer = preg_replace_callback("/<pre.*?<\/pre>/is", function($matches) {
       return "_" . FLG . "_here___prf__start" . base64_encode(urlencode($matches[0])) . "_" . FLG . "_here___prf__end";
     }, $buffer);
@@ -41,10 +41,10 @@
       return "_" . FLG . "_here___txs__start" . base64_encode(urlencode($matches[0])) . "_" . FLG . "_here___txs__end";
     }, $buffer);
 
-    // 改行や空白を削除
+    // Remove line breaks and whitespace
     $buffer = preg_replace(array("/\>[^\S]+/s", "/[^\S]+\</s", "/(\s)+/s" ), array(">", "<", " "), $buffer);
 
-    // 改行が意味を持つタグを元に戻す処理
+    // Restore tags where line breaks matter
     $buffer = preg_replace_callback("/_" . FLG . "_here___prf__start.*?_" . FLG . "_here___prf__end/is", function($matches) {
       return urldecode(base64_decode(substr(substr($matches[0], 24), 0, -22)));
     }, $buffer);
@@ -55,14 +55,14 @@
       return urldecode(base64_decode(substr(substr($matches[0], 24), 0, -22)));
     }, $buffer);
 
-    // DOCTYPE宣言の後にコメントを追加
+    // Add comment after DOCTYPE declaration
     if (substr($buffer, 0, 15) == "<!DOCTYPE html>")
       $buffer = substr($buffer, 15);
 
     return
       "<!DOCTYPE html><!--\n" .
         "\n" .
-        "  MP4Recover / (c) 2025 ActiveTK.\n\n" .
+        "  MP4Recover / (c) 2025 MCarraroDev.\n\n" .
         "  Server-Side Time: " . ( microtime( true ) - LOAD_START_TIME ) . "s\n" .
       "\n-->" . $buffer . "\n";
 
@@ -82,7 +82,7 @@
 
   function secure_filename(string $name): string {
     $base = basename($name);
-    // 表示用にのみ使う (保存名には使わない！)
+    // Use only for display (do not use for saving!)
     return $base;
   }
 

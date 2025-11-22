@@ -1,7 +1,7 @@
 # (c) 2025 ActiveTK.
 # ------------------------------------------------------------
-# 破損した可能性のあるMP4を諸々の方法で修復します。
-# FastAPIによるAPIを実装しています(これをPHP側から呼び出す)。
+# Repairs potentially broken MP4 files using various methods.
+# Implements an API using FastAPI (called from the PHP side).
 # ------------------------------------------------------------
 
 import os
@@ -21,24 +21,24 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-SHARED_DIR = "/data"                         # 共有ディレクトリ(コンテナやホストと共有)
-IN_DIR  = os.path.join(SHARED_DIR, "in")     # 入力の受け取り場所
-OUT_DIR = os.path.join(SHARED_DIR, "out")    # 結果の出力場所
-LOG_DIR = os.path.join(SHARED_DIR, "logs")   # 状態/ログ(JSON)の保存場所
-WORK_ROOT = "/work"                          # 作業ルート(一時ファイルとか？)
-WORK_DIR  = os.path.join(WORK_ROOT, "jobs")  # 作業用ディレクトリ 
-STATE_FILE = os.path.join(LOG_DIR, "state.json")  # 状態を保存しておくjson
-LOCK_FILE  = STATE_FILE + ".lock"                 # state.jsonのロックファイル
+SHARED_DIR = "/data"                         # Shared directory (shared with container/host)
+IN_DIR  = os.path.join(SHARED_DIR, "in")     # Input reception location
+OUT_DIR = os.path.join(SHARED_DIR, "out")    # Result output location
+LOG_DIR = os.path.join(SHARED_DIR, "logs")   # Status/Log (JSON) save location
+WORK_ROOT = "/work"                          # Work root (temporary files, etc.)
+WORK_DIR  = os.path.join(WORK_ROOT, "jobs")  # Working directory for jobs
+STATE_FILE = os.path.join(LOG_DIR, "state.json")  # JSON to save state
+LOCK_FILE  = STATE_FILE + ".lock"                 # Lock file for state.json
 
-# 「救出できた」とみなす最小の秒数
-# これを超えると「部分成功」とみなす
+# Minimum seconds to consider "salvaged"
+# Exceeding this is considered "partial success"
 SALVAGE_MIN_SEC = 0.1
 
-# 「完全に成功」とみなす最小の秒数
-# これを超えると「成功」とみなす
+# Minimum seconds to consider "completely successful"
+# Exceeding this is considered "success"
 SUCCESS_MIN_SEC = 10.0
 
-# 同時実行スレッド数上限
+# Max concurrency limit
 MAX_CONCURRENCY = 8
 
 ALLOWED_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
@@ -47,7 +47,7 @@ def which(x: str, default: Optional[str] = None) -> str:
     p = shutil.which(x)
     return p if p else (default if default else x)
 
-# 外部コマンドのパス
+# External command paths
 BIN_MP4DUMP = which("mp4dump", "/usr/local/bin/mp4dump")
 BIN_MP4BOX  = which("MP4Box", "MP4Box")
 BIN_FFMPEG  = which("ffmpeg", "ffmpeg")
@@ -58,12 +58,12 @@ BIN_REMOOVER = "node /opt/remoover/index.js"
 app = FastAPI(title="MP4 Repair Orchestrator")
 
 def ensure_dirs():
-    # 必要なディレクトリを一括作成
+    # Create necessary directories at once
     for d in (SHARED_DIR, IN_DIR, OUT_DIR, LOG_DIR, WORK_ROOT, WORK_DIR):
         os.makedirs(d, exist_ok=True)
 
 def now_iso() -> str:
-    # 状態記録用のタイムスタンプ作成
+    # Create timestamp for state recording
     return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
 def sanitize_basename(name: str) -> str:
@@ -108,7 +108,7 @@ ANSI_RE = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]')
 CTRL_RE = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]')
 
 def sanitize_log(s: Optional[str], limit: int = 40000) -> str:
-    # ログを整形。ANSI/制御文字を除去し、長すぎる場合は末尾を省略。
+    # Format log. Remove ANSI/control chars, truncate if too long.
     if not s:
         return ""
     s = ANSI_RE.sub('', s)
@@ -118,7 +118,7 @@ def sanitize_log(s: Optional[str], limit: int = 40000) -> str:
     return s
 
 def probe_json(path: str) -> Optional[dict]:
-    # ffprobeでメタ情報をJSONとして取得。失敗時None。
+    # Get meta info as JSON using ffprobe. Returns None on failure.
     rc, out, _ = shell([BIN_FFPROBE, "-v", "error", "-show_streams", "-show_format", "-of", "json", path])
     if rc != 0:
         return None
@@ -128,8 +128,8 @@ def probe_json(path: str) -> Optional[dict]:
         return None
 
 def duration_from_probe(pj: dict) -> float:
-    # ffprobeの結果から動画の長さ(秒)を抽出。
-    # format.durationが無い場合はstream.durationを返す。
+    # Extract video duration (seconds) from ffprobe result.
+    # Returns stream.duration if format.duration is missing.
     d = 0.0
     if not pj:
         return 0.0
@@ -148,8 +148,8 @@ def duration_from_probe(pj: dict) -> float:
     return d
 
 def relaxed_ok(path: str, min_sec: float = SALVAGE_MIN_SEC) -> Tuple[bool, float, str, bool]:
-    # 失敗・部分成功・成功を判定
-    # かなりゆるゆるにしたはず
+    # Determine failure/partial success/success
+    # Should be quite lenient
     det = probe_media_details(path, sample_secs=3.0)
     dur = det["dur_total"] or 0.0
     has_v = det["has_v"]; has_a = det["has_a"]
@@ -159,7 +159,7 @@ def relaxed_ok(path: str, min_sec: float = SALVAGE_MIN_SEC) -> Tuple[bool, float
 
     msg = [f"streams: V={has_v} A={has_a}, duration={dur:.3f}s >= {min_sec:.3f}s"]
 
-    # デコードできるかチェック
+    # Check if decodable
     v_ok = True
     if has_v:
         vp = det["v_packets"]; vf = det["v_frames"]; vd = det["v_dur"]
@@ -196,7 +196,7 @@ class Job(BaseModel):
     fail_reason: Optional[str] = None
     steps: List[Step] = []
 
-# 状態保存のためのロック & メモリ上にジョブ一覧を保持しておく
+# Lock for state saving & keep job list in memory
 STATE_LOCK = threading.RLock()
 JOBS: Dict[str, Job] = {}
 
@@ -235,11 +235,11 @@ def get_job(job_id: str) -> Job:
             raise HTTPException(status_code=404, detail="Job not found")
         return JOBS[job_id]
 
-# サーバ起動時 → load_state()で過去の状態を(可能なら)読み込んでみる
+# On server start -> Try loading past state via load_state()
 load_state()
 
 def classify_candidate(out_path: str) -> Tuple[str, float, str]:
-    # 出力ファイルが壊れていないか簡易チェック
+    # Simple check if output file is not broken
     ok, dur, why, v_ok = relaxed_ok(out_path)
     if not ok:
         return ("reject", dur, why)
@@ -249,14 +249,14 @@ def classify_candidate(out_path: str) -> Tuple[str, float, str]:
 
 
 def finalize(job: Job, candidate: str) -> str:
-    # 成功 or 部分成功と判定したファイルを/data/outへ移動し、最終成果物とする
+    # Move file determined as success or partial success to /data/out as final artifact
     dst = os.path.join(OUT_DIR, f"{job.job_id}.mp4")
     os.makedirs(OUT_DIR, exist_ok=True)
     shutil.move(candidate, dst)
     return dst
 
 def step_record(job: Job, step: Step, kind: str, outpath: Optional[str], msg: str):
-    # ステップ終了時の共通処理。ログ整形・状態保存
+    # Common processing at step end. Log formatting, state saving
     step.finished_at = now_iso()
     step.status  = "success" if kind=="success" else ("part_success" if kind=="part_success" else "failed")
     step.output  = outpath
@@ -276,8 +276,8 @@ def run_ffmpeg(args: List[str]) -> Tuple[int,str,str]:
     return shell([BIN_FFMPEG] + args)
 
 def strat_fix_avcc(in_path: str) -> Tuple[str, Optional[str], str]:
-    # avcCボックスのlengthSizeMinusOneを2bit=0b11になおす。
-    # ヘッダ破損が直ってくれるかもしれない (希望的観測)
+    # Fix lengthSizeMinusOne in avcC box to 2bit=0b11.
+    # Might fix header corruption (wishful thinking)
     with open(in_path, "rb") as f:
         buf = bytearray(f.read())
     hits = []
@@ -359,7 +359,7 @@ def strat_untrunc(ref_path: str, in_path: str) -> Tuple[str, Optional[str], str]
         return ("reject", None, note)
 
 def strat_reencode_video(in_path: str) -> Tuple[str, Optional[str], str]:
-    # 映像のみをデコードし直し、libx264で再エンコードして出力。音声は削除。
+    # Re-decode video only, re-encode with libx264 and output. Audio is removed.
     out = unique_temp("vreenc", ".mp4")
     rc, _o, err = run_ffmpeg(["-hide_banner","-y","-nostdin",
                               "-err_detect","ignore_err","-fflags","+discardcorrupt",
@@ -371,7 +371,7 @@ def strat_reencode_video(in_path: str) -> Tuple[str, Optional[str], str]:
     return ("reject", None, err)
 
 def strat_reencode_av(in_path: str) -> Tuple[str, Optional[str], str]:
-    # 映像と音声の両方を再エンコードしてみる。エラーは全部無視。
+    # Try re-encoding both video and audio. Ignore all errors.
     out = unique_temp("avreenc", ".mp4")
     rc, _o, err = run_ffmpeg(["-hide_banner","-y","-nostdin",
                               "-err_detect","ignore_err","-fflags","+discardcorrupt",
@@ -385,8 +385,8 @@ def strat_reencode_av(in_path: str) -> Tuple[str, Optional[str], str]:
     return ("reject", None, err)
 
 def probe_media_details(path: str, sample_secs: float = 3.0) -> dict:
-    # MP4ファイルの詳細をffprobeで取得し、複数オフセットでパケット/フレームの存在を確認
-    # これにより「どれくらい治せそうか」を数値で評価する
+    # Get MP4 details via ffprobe, check packet/frame existence at multiple offsets
+    # Numerically evaluate "how much can be recovered"
     pj = probe_json(path) or {}
     fmt = pj.get("format") or {}
     streams = pj.get("streams") or []
@@ -409,7 +409,7 @@ def probe_media_details(path: str, sample_secs: float = 3.0) -> dict:
     v_start = v_start or 0.0
     a_start = a_start or 0.0
 
-    # サンプル開始オフセット候補
+    # Sample start offset candidates
     offsets = []
     offsets.append(0.0)
     offsets.append(max(0.0, fmt_start))
@@ -418,7 +418,7 @@ def probe_media_details(path: str, sample_secs: float = 3.0) -> dict:
         offsets.append(max(0.0, dur_total * 0.10))
         offsets.append(max(0.0, dur_total * 0.50))
 
-    # 重複除去して時系列でソート
+    # Remove duplicates and sort chronologically
     seen = set()
     cand_offsets = []
     for x in offsets:
@@ -433,7 +433,7 @@ def probe_media_details(path: str, sample_secs: float = 3.0) -> dict:
         except: return None
 
     def _probe_packets(sel: str, off: float) -> Optional[int]:
-        # 指定オフセットから短時間だけ読み、パケット数をカウントする
+        # Read only for a short time from specified offset, count packets
         rc, out, _ = shell([
             BIN_FFPROBE, "-v","error",
             "-probesize","50M","-analyzeduration","50M",
@@ -455,7 +455,7 @@ def probe_media_details(path: str, sample_secs: float = 3.0) -> dict:
         return None
 
     def _probe_frames(sel: str, off: float) -> Optional[int]:
-        # パケットが拾えない場合の代替で、フレーム数を取得
+        # Alternative when packets cannot be picked up, get frame count
         rc, out, _ = shell([
             BIN_FFPROBE, "-v","error",
             "-probesize","50M","-analyzeduration","50M",
@@ -482,15 +482,15 @@ def probe_media_details(path: str, sample_secs: float = 3.0) -> dict:
             v_packets = _probe_packets("v:0", off)
         if has_a and a_packets in (None, 0):
             a_packets = _probe_packets("a:0", off)
-        # ビデオが未検出 → フレーム数でもやってみる
+        # Video undetected -> Try with frame count
         if has_v and (v_packets in (None, 0)) and v_frames in (None, 0):
             v_frames = _probe_frames("v:0", off)
         if (not has_v or (v_packets and v_packets > 0) or (v_frames and v_frames > 0)) and \
            (not has_a or (a_packets and a_packets > 0)):
             break
 
-    # 元々はファイルの情報から取得していたが、
-    # 壊れたMP4ファイルのメタ情報は微塵も信用できないデタラメなのでやめた
+    # Originally obtained from file info, but
+    # broken MP4 file meta info is completely unreliable nonsense so stopped
     v_dur = None
     a_dur = None
 
@@ -505,7 +505,7 @@ def probe_media_details(path: str, sample_secs: float = 3.0) -> dict:
 
 
 def iter_atoms(buf: bytes):
-    # MP4のatom(box)を先頭から見ていく
+    # Look at MP4 atoms (boxes) from the beginning
     i, n = 0, len(buf)
     while i + 8 <= n:
         size = int.from_bytes(buf[i:i+4], "big")
@@ -513,7 +513,7 @@ def iter_atoms(buf: bytes):
         if size == 0:
             yield i, n - i, typ; return
         elif size == 1:
-            # 64bit拡張サイズ
+            # 64bit extended size
             if i + 16 > n: return
             size = int.from_bytes(buf[i+8:i+16], "big")
             if size < 16 or i + size > n: return
@@ -523,7 +523,7 @@ def iter_atoms(buf: bytes):
             yield i, size, typ; i += size
 
 def find_mdat_ranges(buf: bytes) -> List[Tuple[int,int]]:
-    # mdatのペイロード領域のオフセットと長さのリストを取得
+    # Get list of offset and length of mdat payload area
     out = []
     for off, sz, typ in iter_atoms(buf):
         if typ == b"mdat":
@@ -531,13 +531,13 @@ def find_mdat_ranges(buf: bytes) -> List[Tuple[int,int]]:
     return out
 
 def looks_like_annexb(buf: bytes, i: int) -> bool:
-    # AnnexBのスタートコード(0x000001 or 0x00000001)の検出
+    # Detection of AnnexB start code (0x000001 or 0x00000001)
     if i+3 < len(buf) and buf[i]==0 and buf[i+1]==0 and buf[i+2]==1: return True
     if i+4 < len(buf) and buf[i]==0 and buf[i+1]==0 and buf[i+2]==0 and buf[i+3]==1: return True
     return False
 
 def extract_h264_annexb(mdat: bytes) -> bytes:
-    # mdatからAnnexB形式のH.264 NAL列を抽出(見つかったスタートコード区間を連結)
+    # Extract AnnexB format H.264 NAL sequence from mdat (concatenate found start code sections)
     out = bytearray(); i, n = 0, len(mdat)
     while i < n-3:
         if looks_like_annexb(mdat, i):
@@ -549,7 +549,7 @@ def extract_h264_annexb(mdat: bytes) -> bytes:
     return bytes(out)
 
 def extract_h264_lenpref(mdat: bytes, nal_len_size: int) -> bytes:
-    # length-prefixed(HVCC/avcC系)のH.264をAnnexBへ変換して抽出
+    # Convert length-prefixed (HVCC/avcC type) H.264 to AnnexB and extract
     out = bytearray(); i, n = 0, len(mdat)
     while i + nal_len_size <= n:
         ln = int.from_bytes(mdat[i:i+nal_len_size], "big"); i += nal_len_size
@@ -558,8 +558,8 @@ def extract_h264_lenpref(mdat: bytes, nal_len_size: int) -> bytes:
     return bytes(out)
 
 def is_plausible_h264(raw: bytes, min_bytes: int = 1024) -> bool:
-    # 抽出したバイト列が「それっぽいH.264」か簡易判定
-    # ある程度のNAL配列があり、うちSPS/PPS/非IDR等の通常NALが一定割合あることを確認
+    # Simple check if extracted byte sequence is "plausible H.264"
+    # Confirm there is a certain amount of NAL arrays, and a certain percentage are normal NALs like SPS/PPS/non-IDR
     if len(raw) < min_bytes: return False
     cnt = 0; good = 0; i, n = 0, len(raw)
     while i+4 < n:
@@ -576,7 +576,7 @@ def is_plausible_h264(raw: bytes, min_bytes: int = 1024) -> bool:
     return cnt >= 20 and (good / max(1,cnt)) > 0.3
 
 def extract_adts_aac(mdat: bytes) -> bytes:
-    # mdatからADTS AACフレームのみ抽出
+    # Extract only ADTS AAC frames from mdat
     out = bytearray(); i, n = 0, len(mdat)
     while i+7 <= n:
         if (mdat[i] == 0xFF) and (mdat[i+1] & 0xF0) == 0xF0:
@@ -588,8 +588,8 @@ def extract_adts_aac(mdat: bytes) -> bytes:
     return bytes(out)
 
 def strat_rawscan_wrap(in_path: str) -> Tuple[str, Optional[str], str]:
-    # mdatを直接走査し、H.264/AACを見つけたらESとして取り出す
-    # さすがに無謀な気はするがやってみる
+    # Scan mdat directly, extract as ES if H.264/AAC found
+    # Seems reckless but giving it a try
     with open(in_path, "rb") as f:
         buf = f.read()
     mdats = find_mdat_ranges(buf)
@@ -645,16 +645,16 @@ def strat_rawscan_wrap(in_path: str) -> Tuple[str, Optional[str], str]:
             return ("probe", out, "raw-scan wrap A-only")
     return ("reject", None, "raw-scan failed")
 
-FAIL_TEXT = "全ての修復方法に失敗しました。もし同じ環境で撮影した別の動画があれば、選択すると復元できる可能性が高くなります。"
+FAIL_TEXT = "All recovery methods failed. If you have another video shot in the same environment, selecting it may increase recovery chances."
 
 def run_pipeline(job: Job, ref_abs: Optional[str]) -> None:
-    # パイプライン全体の実行。refがある場合は最初にuntruncを試し、
-    # 以降はメタ修復→remux→再エンコード→rawスキャンの順で進める
+    # Pipeline execution. If ref is present, try untrunc first,
+    # then proceed with meta repair -> remux -> re-encode -> raw scan
     in_path = job.input_path
     best_partial = {"path": None, "dur": 0.0, "msg": "", "step": ""}
 
     def try_step(name: str, strat_fn, *args):
-        # 各ステップ共通の処理。実行→候補評価→成功ならfinalize→部分成功を記録。
+        # Common processing for each step. Execute -> Evaluate candidate -> Finalize if success -> Record partial success.
         nonlocal best_partial
         st = step_begin(job, name)
         kind, outp, note = strat_fn(*args)
@@ -676,7 +676,7 @@ def run_pipeline(job: Job, ref_abs: Optional[str]) -> None:
             step_record(job, st, "failed", None, note)
             return "cont"
 
-    # untruncは成功/失敗のみにする
+    # untrunc is success/fail only
     if ref_abs and os.path.exists(ref_abs):
         st = step_begin(job, "untrunc")
         kind, outp, note = strat_untrunc(ref_abs, in_path)
@@ -712,14 +712,14 @@ def run_pipeline(job: Job, ref_abs: Optional[str]) -> None:
     if r == "final":
         return
 
-    # ここまで成功が無ければ、部分成功を最終成果物として採用
+    # If no success so far, adopt partial success as final result
     if best_partial["path"]:
         job.result_path = finalize(job, best_partial["path"])
         job.status = "part_success"
         update_job(job)
         return
 
-    # それも無ければ失敗終了
+    # If that also fails, end with failure
     job.status = "failed"
     job.result_path = None
     job.fail_reason = FAIL_TEXT
@@ -735,7 +735,7 @@ def worker(job: Job, ref_abs: Optional[str]):
             run_pipeline(job, ref_abs)
         except Exception as e:
             job.status = "failed"
-            job.fail_reason = FAIL_TEXT + f"\n（内部例外: {e}）"
+            job.fail_reason = FAIL_TEXT + f"\n(Internal Exception: {e})"
             update_job(job)
 
 class StatusResponse(BaseModel):
@@ -751,7 +751,7 @@ class StatusResponse(BaseModel):
 
 @app.get("/healthz")
 def healthz():
-    # 動作確認用
+    # For operation check
     return {"ok": True, "time": now_iso()}
 
 @app.get("/start", response_model=StatusResponse)

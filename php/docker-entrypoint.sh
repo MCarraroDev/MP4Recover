@@ -8,8 +8,8 @@ chmod 0777 /tmp/php-uploads
 
 mkdir -p /data/in /data/out /data/logs
 
-# 一応PERMISSIVE_MODEで安全性を調節できる
-# 実際に運営するときは、PERMISSIVE_MODEを0にしておくことを推奨
+# PERMISSIVE_MODE allows adjusting security levels
+# For actual operation, it is recommended to set PERMISSIVE_MODE to 0
 if [ "$PERMISSIVE_MODE" = "1" ]; then
   chmod -R 0777 /data
 else
