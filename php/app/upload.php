@@ -33,7 +33,41 @@
       header('Content-Type: text/plain; charset=utf-8');
       while (ob_get_level() > 0) { ob_end_clean(); }
       echo "Internal Server Error (fatal): {$err['message']} @ {$err['file']}:{$err['line']}";
+    }
+  });
+
+  function fail(string $msg, int $code=400) : never {
+    http_response_code($code);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo "Error: " . $msg;
+    exit;
+  }
+
+  set_time_limit(600); // 10 minutes
+
+  if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    fail(__('err_post_required'), 405);
+  }
+
+  if (!isset($_FILES['broken']) || $_FILES['broken']['error'] !== UPLOAD_ERR_OK) {
+    fail(__('err_upload_failed'));
+  }
+
+  $broken_tmp  = $_FILES['broken']['tmp_name'];
+  $broken_name = $_FILES['broken']['name'] ?? 'broken.mp4';
+
+  $ref_present = isset($_FILES['reference']) && $_FILES['reference']['error'] === UPLOAD_ERR_OK;
+
+  $in_dir = '/data/in';
+  if (!is_dir($in_dir)) { if (!@mkdir($in_dir, 0775, true)) fail(__('err_mkdir_failed'), 500); } // Create with 775
+
+  $broken_base = bin2hex(random_bytes(12)).".mp4";
+  $broken_dst  = $in_dir . '/' . $broken_base;
+  if (!move_uploaded_file($broken_tmp, $broken_dst)) {
+    $perm = @decoct(@fileperms($in_dir) & 0777);
+    $uid  = function_exists('posix_getuid') ? @posix_getuid() : -1;
     $gid  = function_exists('posix_getgid') ? @posix_getgid() : -1;
+    // Debug info on failure
     fail(__('err_save_failed') . " dir_perm={$perm} uid={$uid} gid={$gid}", 500);
   }
 
@@ -48,6 +82,7 @@
     }
   }
 
+  // Submit job to orchestrator
   $query = http_build_query([
     'src'    => $broken_base,
     'ref'    => $ref_base,
