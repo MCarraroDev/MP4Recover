@@ -21,6 +21,8 @@ You need to have **Docker** installed on your machine.
 Open your terminal (Command Prompt, PowerShell, or Terminal) and run:
 ```bash
 git clone https://github.com/MCarraroDev/MP4Recover.git
+```
+```bash
 cd MP4Recover
 ```
 
@@ -37,6 +39,8 @@ Double-click `build.bat` or run it from PowerShell:
 Run the shell script:
 ```bash
 chmod +x build.sh
+```
+```bash
 ./build.sh
 ```
 
