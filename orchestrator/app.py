@@ -330,7 +330,7 @@ def strat_untrunc(ref_path: str, in_path: str) -> Tuple[str, Optional[str], str]
     broken_copy = os.path.join(tmpdir, "broken.mp4")
     shutil.copy2(in_path, broken_copy)
 
-    rc, _o, err = shell([BIN_UNTRUNC, ref_path, broken_copy])
+    rc, _o, err = shell([BIN_UNTRUNC, "-sm", "-dyn", "-s", ref_path, broken_copy])
 
     base, ext = os.path.splitext(broken_copy)
     default_out = f"{base}_fixed{ext if ext else '.mp4'}"
